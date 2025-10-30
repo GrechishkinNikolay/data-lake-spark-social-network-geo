@@ -68,6 +68,20 @@ def main():
 
     events_geo_full.write.mode("overwrite").parquet("/user/kolaygrech/data/analytics/events_geo_full")
 
+    w_first_event = Window.partitionBy("user_id_unified").orderBy("date")
+
+    first_events = (
+        events_geo_full
+        .withColumn("event_rank", F.row_number().over(w_first_event))
+        .filter(F.col("event_rank") == 1)
+        .withColumn("event_type", F.lit("registration"))
+        .drop("event_rank")
+    )
+
+    events_geo_full = (
+        events_geo_full.unionByName(first_events)
+    )
+
     events_geo_full = (
         events_geo_full
         .withColumn("week", F.weekofyear("date"))

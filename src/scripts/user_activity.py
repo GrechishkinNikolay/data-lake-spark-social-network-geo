@@ -141,7 +141,9 @@ def main():
             F.col("city").alias("act_city"),
             "date",
             "message_ts",
-            "timezone"
+            "timezone",
+            F.col("event_lat").alias("user_lat"),
+            F.col("event_lon").alias("user_lon")
         )
     )
 

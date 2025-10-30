@@ -55,25 +55,16 @@ def main():
         )
     )
 
-    events_closest_city = spark.read.parquet("/user/kolaygrech/data/analytics/events_closest_city/")
-
     users_geo = (
-        events_closest_city
-        .select(
-            "user_id",
-            F.col("city"),
-            F.col("event_lat").alias("user_lat"),
-            F.col("event_lon").alias("user_lon"),
-            "timezone"
-        )
-        .distinct()
+        spark.read.parquet("/user/kolaygrech/data/analytics/user_last_city/")
+        .select("user_id", "act_city", "user_lat", "user_lon", "timezone")
     )
 
     pairs_geo = (
         subs_pairs
         .join(users_geo.alias("l"), F.col("user_left") == F.col("l.user_id"), "inner")
         .join(users_geo.alias("r"), F.col("user_right") == F.col("r.user_id"), "inner")
-        .filter(F.col("l.city") == F.col("r.city"))
+        .filter(F.col("l.act_city") == F.col("r.act_city"))
     )
 
     R = 6371  # радиус Земли в км
@@ -117,7 +108,7 @@ def main():
         .select(
             "user_left",
             "user_right",
-            F.col("l.city").alias("zone_id"),
+            F.col("l.act_city").alias("zone_id"),
             F.from_utc_timestamp(current_timestamp(), F.col("l.timezone")).alias("local_time")
         )
         .withColumn("processed_dttm", current_timestamp())
